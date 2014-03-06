@@ -2,7 +2,7 @@
     <h2>{{ error }}</h2>
 </div>
 <div ng-hide="error">
-    <div class="row" ng-hide="requests">
+    <div class="row" ng-show="(bin.requestCount == 0)">
         <div class="col-lg-8 col-lg-offset-2">
             <h2>Bin url:</h2>
             <div>
