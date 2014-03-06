@@ -1,0 +1,33 @@
+<div class="row">
+    <div class="col-lg-offset-3 col-lg-5">
+        <div class="row">
+            <p>RequestBin gives you a URL that will collect requests made to it and let you inspect them in a human-friendly way.
+            Use RequestBin to see what your HTTP client is sending or to inspect and debug webhook requests.</p>
+        </div>
+        <div class="row well-lg">
+            <button class="btn-lg btn-success" ng-click="createBin()">
+                Create a RequestBin
+            </button>
+            <!--<label class="checkbox" title="Private bins can only be viewed by you using a browser cookie">-->
+                <!--<input id="private" type="checkbox" ng-model="private"> &nbsp;Private <small>(only viewable from this browser)</small>-->
+            <!--</label>-->
+        </div>
+
+    </div>
+    <div class="col-lg-offset-1 col-lg-3">
+        <div>
+            <ul class="nav nav-pills nav-stacked">
+                <li><h4>History</h4></li>
+                <li ng-repeat="bin in history">
+                    <a ng-href="/inspect/{{ bin.name }}" ng-style="(bin.color | getRgbColor)">
+                        <span class="badge pull-right">{{ bin.requestCount }}</span>
+                        <span class="glyphicon glyphicon-cloud" ng-hide="bin.private" title="public"></span>
+                        <span class="glyphicon glyphicon-lock" ng-show="bin.private" title="private"></span>
+                        {{ bin.name }}
+
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>

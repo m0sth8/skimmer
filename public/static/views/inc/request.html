@@ -1,0 +1,63 @@
+<div class="request">
+    <div class="row request-head">
+        <div class="col-lg-4 col-md-4 col-sm-3">
+            <span class="host">{{ request.host }}</span><br/>
+            <span class="method">{{ request.method }}</span>
+            <span class="query">{{ request.requestURI }}</span>
+        </div>
+        <div class="col-lg-6 col-md-6 col-sm-6">
+            <span class="content-type">{{ request.header["Content-Type"][0] }}</span><br />
+            <span class="glyphicon glyphicon-cloud-download"></span> <span title="{{ request.contentLength }} bytes" class="content-length">{{ request.contentLength | humanSize }}</span>
+        </div>
+        <div class="col-lg-2 col-md-2 col-sm-3">
+            <a ng-href="/inspect/{{ bin.name }}/requests/{{ request.id }}"
+               title="Direct link to request"
+               ng-style="{color: binColor}">
+                <span class="glyphicon glyphicon-link"></span></a>
+            <span class="time">{{ request.created | relativeTime }}</span> <br/>
+            <span class="remote-addr">From {{ request.remoteAddr }}</span>
+        </div>
+    </div>
+
+    <div class="row request-data">
+        <div class="col-lg-4 col-md-4 col-sm-3">
+            <div>
+                <div class="topic">Form/Post parameters</div>
+                <ul class="list-unstyled header-pair">
+                    <li ng-repeat="(key, values) in request.formValue">
+                        <div ng-repeat="value in values">
+                            <strong>{{ key }}</strong>: {{ value }}
+                        </div>
+                    </li>
+                </ul>
+            </div>
+            <div ng-show="request.formFile">
+                <div class="topic">Files</div>
+                <ul class="list-unstyled header-pair">
+                    <li ng-repeat="value in request.formFile">
+                        {{ value }}
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <div class="col-lg-8 col-md-8 col-sm-9">
+            <div class="topic">Headers</div>
+            <ul class="list-unstyled header-pair" >
+                <li ng-repeat="(key, values) in request.header">
+                    <div ng-repeat="value in values">
+                        <strong>{{ key }}</strong>: {{ value }}
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="row request-body" ng-show="request.body">
+        <div class="col-lg-12 col-md-12 col-sm-12">
+            <div class="topic">Raw body</div>
+            <div class="raw-body">
+                <pre>{{ request.body }}</pre>
+            </div>
+        </div>
+    </div>
+</div>

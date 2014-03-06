@@ -1,0 +1,4 @@
+<div class="bin-url-info pull-right" ng-hide="error">
+    <a ng-href="/inspect/{{ bin.name }}" ng-style="{color: binColor}"><span class="glyphicon glyphicon-cloud" title="public" ng-hide="bin.private"></span><span class="glyphicon glyphicon-lock" title="private" ng-show="bin.private"></span></a>
+    <input type="text" value="{{ getBinUrl(bin) }}" size="40" onclick="this.select()">
+</div>

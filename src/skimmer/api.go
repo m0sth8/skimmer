@@ -26,8 +26,12 @@ func GetApi() *martini.ClassicMartini {
 
 	api := martini.Classic()
 
-	api.Use(render.Renderer())
 	api.MapTo(memoryStorage, (*Storage)(nil))
+	api.Use(render.Renderer(render.Options{
+		Directory: "public/static/views",
+		Extensions: []string{".html"},
+		Delims: render.Delims{"{[{", "}]}"},
+	}))
 
 	api.Post("/api/v1/bins/", func(r render.Render, storage Storage){
 			bin := NewBin()
@@ -96,6 +100,10 @@ func GetApi() *martini.ClassicMartini {
 			} else {
 				r.Error(http.StatusNotFound)
 			}
+		})
+
+	api.Get("**", func(r render.Render){
+			r.HTML(200, "index", nil)
 		})
 	return api
 }

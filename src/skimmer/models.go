@@ -11,18 +11,23 @@ import (
 var rs = NewRandomString("0123456789abcdefghijklmnopqrstuvwxyz")
 
 type Bin struct {
-	Name         string `json:"name"`
-	Created      int64  `json:"created"`
-	Updated      int64  `json:"updated"`
-	RequestCount int    `json:"requestCount"`
+	Name         string  `json:"name"`
+	Created      int64   `json:"created"`
+	Updated      int64   `json:"updated"`
+	RequestCount int     `json:"requestCount"`
+	Color		 [3]byte `json:"color"`
+	Favicon      string  `json:"favicon"`
 }
 
 func NewBin() *Bin {
+	color:= RandomColor()
 	now := time.Now().Unix()
 	bin := Bin{
 		Created:      now,
 		Updated:	  now,
 		Name:         rs.Generate(6),
+		Color:		  color,
+		Favicon:      Solid16x16gifDatauri(color),
 	}
 	return &bin
 }

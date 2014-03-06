@@ -1,0 +1,54 @@
+<div ng-show="error" class="text-danger text-center">
+    <h2>{{ error }}</h2>
+</div>
+<div ng-hide="error">
+    <div class="row" ng-hide="requests">
+        <div class="col-lg-8 col-lg-offset-2">
+            <h2>Bin url:</h2>
+            <div>
+                <input type="text" class="input-lg" value="{{ getBinUrl(bin) }}" size="40" onclick="this.select()">
+            </div>
+            <div>
+                <hr />
+                <h4>Make a request to get started.</h4>
+                <br />
+                <h5>cURL</h5>
+                <pre>curl -X POST -d "fizz=buzz" {{ getBinUrl(bin) }}</pre>
+                <br />
+                <h5>Python (with Requests)</h5>
+<pre>
+import requests, time
+r = requests.post('{{ getBinUrl(bin) }}', data={"ts":time.time()})
+print r.status_code
+print r.content
+</pre>
+                <br />
+                <h5>Go</h5>
+<pre>
+package main
+
+import (
+	"net/http"
+	"net/url"
+	"fmt"
+	"io/ioutil"
+)
+
+func main(){
+	if resp, err := http.PostForm("{{ getBinUrl(bin) }}",
+		url.Values{"key": {"Value"}, "id": {"123"}}); err == nil {
+		fmt.Println(resp.StatusCode)
+		if body, err := ioutil.ReadAll(resp.Body); err == nil {
+			fmt.Println(string(body))
+		}
+	}
+}
+</pre>
+            </div>
+        </div>
+    </div>
+    <div ng-repeat="request in requests">
+        <ng-include src="'/static/views/inc/request.html'"></ng-include>
+        <hr>
+    </div>
+</div>

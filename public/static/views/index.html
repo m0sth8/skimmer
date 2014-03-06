@@ -1,0 +1,62 @@
+<!doctype html>
+<html ng-app="skimmerApp">
+<head>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+
+    <link rel="stylesheet" href="/static/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="/static/css/bootstrap-theme.min.css" />
+    <link rel="stylesheet" href="/static/css/default.css" />
+
+    <link rel="shortcut icon" ng-href="{{ faviconHref }}" href="" />
+
+    <title ng-bind="(title + ' Skimmer')">Skimmer</title>
+
+</head>
+<body>
+
+<div class="container">
+    <div class="my-page-header">
+        <div class="row">
+            <div class="col-lg-3 col-md-3 col-sm-4">
+                <h1><a href="/">Skimmer</a></h1>
+            </div>
+            <div class="col-lg-5 col-md-5 col-sm-7 col-sm-offset-1 col-md-offset-4 col-lg-offset-4" ui-view="ViewHead">
+
+            </div>
+        </div>
+    </div>
+
+    <div ui-view="ViewMain">
+
+    </div>
+
+
+</div>
+
+
+<script src="/static/lib/angular.js"></script>
+<script src="/static/lib/angular-route.js"></script>
+<script src="/static/lib/lodash.js"></script>
+<script src="/static/lib/angular-ui-router.min.js"></script>
+<script src="/static/lib/restangular.js"></script>
+
+
+
+<script src="/static/app/app.js"></script>
+<script src="/static/app/controllers/home-ctrl.js"></script>
+<script src="/static/app/controllers/bin-ctrl.js"></script>
+<script src="/static/app/controllers/request-ctrl.js"></script>
+
+<script src="/static/app/services/backend-service.js"></script>
+
+<script src="/static/app/filters/rgb-color.js"></script>
+<script src="/static/app/filters/relative-time.js"></script>
+<script src="/static/app/filters/human-size.js"></script>
+
+
+</body>
+</html>

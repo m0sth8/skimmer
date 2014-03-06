@@ -109,7 +109,7 @@ func TestBinsGet(t *testing.T) {
 				}
 			}
 		}
-		req, _ := http.NewRequest("GET", "/api/v1/bins/", nil)
+
 		api = GetApi()
 		mockedStorage := &MockedStorage{}
 		api.MapTo(mockedStorage, (*Storage)(nil))
