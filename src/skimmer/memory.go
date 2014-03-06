@@ -3,12 +3,14 @@ package skimmer
 import (
 	"errors"
 	"sync"
+	"time"
 )
 
 type MemoryStorage struct {
 	BaseStorage
 	sync.RWMutex
 	binRecords map[string]*BinRecord
+	cleanTimer *time.Timer
 }
 
 type BinRecord struct {
@@ -30,13 +32,40 @@ func (binRecord *BinRecord) ShrinkRequests(size int) {
 	}
 }
 
-func NewMemoryStorage(maxRequests int) *MemoryStorage {
-	return &MemoryStorage{
+func NewMemoryStorage(maxRequests int, binLifetime int64) *MemoryStorage {
+	storage := &MemoryStorage{
 		BaseStorage{
 			maxRequests:        maxRequests,
+			binLifetime:		binLifetime,
 		},
 		sync.RWMutex{},
 		map[string]*BinRecord{},
+		&time.Timer{},
+	}
+	return storage
+}
+
+func (storage *MemoryStorage) StartCleaning(timeout int) {
+	defer func(){
+		storage.cleanTimer = time.AfterFunc(time.Duration(timeout) * time.Second, func(){storage.StartCleaning(timeout)})
+	}()
+	storage.clean()
+}
+
+func (storage *MemoryStorage) StopCleaning() {
+	if storage.cleanTimer != nil {
+		storage.cleanTimer.Stop()
+	}
+}
+
+func (storage *MemoryStorage) clean() {
+	storage.Lock()
+	defer storage.Unlock()
+	now := time.Now().Unix()
+	for name, binRecord := range storage.binRecords {
+		if binRecord.bin.Updated < (now - storage.binLifetime) {
+			delete(storage.binRecords, name)
+		}
 	}
 }
 
@@ -125,6 +154,7 @@ func (storage *MemoryStorage) CreateRequest(bin *Bin, req *Request) error {
 		binRecord.requestMap[req.Id] = req
 		binRecord.ShrinkRequests(storage.maxRequests)
 		binRecord.bin.RequestCount = len(binRecord.requests)
+		binRecord.bin.Updated = time.Now().Unix()
 		return nil
 	} else {
 		return err

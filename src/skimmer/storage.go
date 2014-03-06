@@ -12,4 +12,5 @@ type Storage interface {
 
 type BaseStorage struct {
 	maxRequests       int
+	binLifetime		  int64
 }

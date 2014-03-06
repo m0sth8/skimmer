@@ -5,16 +5,17 @@ import (
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"bytes"
+	"time"
 )
 
 
 func getMemoryStorage() *MemoryStorage {
-	return NewMemoryStorage(REQUEST_BODY_SIZE)
+	return NewMemoryStorage(REQUEST_BODY_SIZE, BIN_LIFETIME)
 }
 
 func TestNewMemoryStorage(t *testing.T) {
 	maxRequests := 20
-	storage := NewMemoryStorage(maxRequests)
+	storage := NewMemoryStorage(maxRequests, BIN_LIFETIME)
 
 	assert.Equal(t, storage.maxRequests, maxRequests)
 	assert.NotNil(t, storage.binRecords)
@@ -103,7 +104,7 @@ func TestLookupBins(t *testing.T) {
 }
 
 func TestCreateRequest(t *testing.T) {
-	storage := NewMemoryStorage(2)
+	storage := NewMemoryStorage(2, BIN_LIFETIME)
 	bin := NewBin()
 	storage.CreateBin(bin)
 	httpRequest, _ := http.NewRequest("GET", "/", bytes.NewBuffer([]byte("body")))
@@ -202,4 +203,22 @@ func TestLookupRequests(t *testing.T) {
 		assert.Equal(t, len(requests), 0)
 	}
 
+}
+
+func TestMemoryClean(t *testing.T) {
+	storage := NewMemoryStorage(2, -1)
+	bin := NewBin()
+	storage.CreateBin(bin)
+	assert.Equal(t, storage.binRecords[bin.Name].bin, bin)
+	storage.clean()
+	assert.Equal(t, len(storage.binRecords), 0)
+
+	storage.CreateBin(bin)
+	assert.Equal(t, storage.binRecords[bin.Name].bin, bin)
+	storage.StartCleaning(0)
+	assert.Equal(t, len(storage.binRecords), 0)
+	storage.CreateBin(bin)
+	time.Sleep(1 * time.Millisecond)
+	assert.Equal(t, len(storage.binRecords), 0)
+	storage.StopCleaning()
 }

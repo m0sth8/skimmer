@@ -19,6 +19,7 @@ type ErrorMsg struct{
 const (
 	REQUEST_BODY_SIZE = 1024 * 30
 	MAX_REQUEST_COUNT = 20
+	BIN_LIFETIME = 60 * 60 * 24 * 2
 )
 
 type Config struct {
@@ -26,7 +27,7 @@ type Config struct {
 }
 
 func GetApi(config *Config) *martini.ClassicMartini {
-	storage := NewMemoryStorage(MAX_REQUEST_COUNT)
+	storage := NewMemoryStorage(MAX_REQUEST_COUNT, BIN_LIFETIME)
 	store := sessions.NewCookieStore([]byte(config.SessionSecret))
 
 	api := martini.Classic()
