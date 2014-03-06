@@ -83,6 +83,10 @@ func NewRequest(httpRequest *http.Request, maxBodySize int) *Request {
 	} else {
 		formValue = httpRequest.PostForm
 	}
+	if realIp := httpRequest.Header.Get("X-Real-Ip"); realIp != "" {
+		httpRequest.Header.Del("X-Real-Ip")
+		httpRequest.RemoteAddr = realIp
+	}
 	request := Request{
 		Id:            rs.Generate(12),
 		Created:       time.Now().Unix(),
