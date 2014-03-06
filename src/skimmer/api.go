@@ -22,12 +22,33 @@ const (
 	BIN_LIFETIME = 60 * 60 * 24 * 2
 )
 
+type RedisConfig struct {
+	RedisAddr			string
+	RedisPassword		string
+	RedisPrefix			string
+}
+
 type Config struct {
 	SessionSecret		string
+	Storage				string
+	RedisConfig
 }
 
 func GetApi(config *Config) *martini.ClassicMartini {
-	storage := NewMemoryStorage(MAX_REQUEST_COUNT, BIN_LIFETIME)
+	var storage Storage
+
+	switch config.Storage{
+	case "redis":
+		redisStorage := NewRedisStorage(config.RedisAddr, config.RedisPassword, config.RedisPassword, MAX_REQUEST_COUNT, BIN_LIFETIME)
+		redisStorage.StartCleaning(60)
+		storage = redisStorage
+	default:
+		memoryStorage := NewMemoryStorage(MAX_REQUEST_COUNT, BIN_LIFETIME)
+		memoryStorage.StartCleaning(60)
+		storage = memoryStorage
+
+
+	}
 	store := sessions.NewCookieStore([]byte(config.SessionSecret))
 
 	api := martini.Classic()
