@@ -16,3 +16,7 @@ func TestRandomString(t *testing.T) {
 	}
 	assert.Empty(t, rs.Generate(-1))
 }
+
+func TestRandomByte(t *testing.T) {
+//	assert.Equal(t, int(randomByte(100, 5)), 0)
+}

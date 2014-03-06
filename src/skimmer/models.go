@@ -17,6 +17,13 @@ type Bin struct {
 	RequestCount int     `json:"requestCount"`
 	Color		 [3]byte `json:"color"`
 	Favicon      string  `json:"favicon"`
+	Private      bool    `json:"private"`
+	SecretKey    string  `json:"-"`
+}
+
+func (bin *Bin) SetPrivate() {
+	bin.Private = true
+	bin.SecretKey = rs.Generate(32)
 }
 
 func NewBin() *Bin {
@@ -28,6 +35,7 @@ func NewBin() *Bin {
 		Name:         rs.Generate(6),
 		Color:		  color,
 		Favicon:      Solid16x16gifDatauri(color),
+		Private:	  false,
 	}
 	return &bin
 }

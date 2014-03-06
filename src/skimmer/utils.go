@@ -5,6 +5,9 @@ import (
 	"time"
 	"fmt"
 	"encoding/base64"
+	"encoding/json"
+	"io/ioutil"
+	"net/http"
 )
 
 var rg = rand.New(rand.NewSource(time.Now().Unix()))
@@ -48,4 +51,17 @@ func RandomColor() ([3]byte){
 func Solid16x16gifDatauri(color [3]byte) string{
 	return fmt.Sprintf("data:image/gif;base64,R0lGODlhEAAQAIAA%sACH5BAQAAAAALAAAAAAQABAAAAIOhI+py+0Po5y02ouzPgUAOw==",
 		base64.StdEncoding.EncodeToString([]byte{0, color[0], color[1], color[2], 0, 0}))
+}
+
+func DecodeJsonPayload(r *http.Request, v interface{}) error {
+	content, err := ioutil.ReadAll(r.Body)
+	r.Body.Close()
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(content, v)
+	if err != nil {
+		return err
+	}
+	return nil
 }

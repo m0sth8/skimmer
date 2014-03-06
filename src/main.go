@@ -5,6 +5,8 @@ import (
 )
 
 func main() {
-	api := skimmer.GetApi()
+	api := skimmer.GetApi(&skimmer.Config{
+		SessionSecret: "secret123",
+	})
 	api.Run()
 }

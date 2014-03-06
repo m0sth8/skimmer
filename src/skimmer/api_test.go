@@ -54,8 +54,8 @@ func (s *MockedStorage) LookupRequests(binName string, from, to int) ([]*Request
 
 
 func TestBinsPost(t *testing.T) {
-	api := GetApi()
-	req, err := http.NewRequest("POST", "/api/v1/bins/", nil)
+	api := GetApi(&Config{SessionSecret: "123"})
+	req, err := http.NewRequest("POST", "/api/v1/bins/", bytes.NewBuffer([]byte("{}")))
 	if assert.Nil(t, err) {
 		res := httptest.NewRecorder()
 		api.ServeHTTP(res, req)
@@ -64,10 +64,32 @@ func TestBinsPost(t *testing.T) {
 		err = json.Unmarshal([]byte(res.Body.String()), &data)
 		if assert.Nil(t, err) {
 			assert.Equal(t, len(data["name"].(string)), 6)
+			assert.False(t, data["private"].(bool))
 		}
 	}
+	req, err = http.NewRequest("POST", "/api/v1/bins/", bytes.NewBuffer([]byte("{\"private\":true}")))
+	if assert.Nil(t, err) {
+		res := httptest.NewRecorder()
+		api.ServeHTTP(res, req)
+		assert.Equal(t, res.Code, 201)
+		data := map[string] interface {}{}
+		err = json.Unmarshal(res.Body.Bytes(), &data)
+		if assert.Nil(t, err) {
+			assert.Equal(t, len(data["name"].(string)), 6)
+			fmt.Println(data)
+			assert.True(t, data["private"].(bool))
+		}
+	}
+	// decoding payload error
+	if req, err = http.NewRequest("POST", "/api/v1/bins/", bytes.NewBuffer([]byte(""))); assert.Nil(t, err){
+		res := httptest.NewRecorder()
+		api.ServeHTTP(res, req)
+		assert.Equal(t, res.Code, 400)
+	}
+
 	mockedStorage := &MockedStorage{}
 	api.MapTo(mockedStorage, (*Storage)(nil))
+	req, err = http.NewRequest("POST", "/api/v1/bins/", bytes.NewBuffer([]byte("{}")))
 	if assert.Nil(t, err) {
 		res := httptest.NewRecorder()
 		mockedStorage.On("CreateBin").Return(errors.New("Storage error"))
@@ -81,7 +103,7 @@ func TestBinsPost(t *testing.T) {
 func TestBinsGet(t *testing.T) {
 	req, err := http.NewRequest("GET", "/api/v1/bins/", nil)
 	if assert.Nil(t, err) {
-		api := GetApi()
+		api := GetApi(&Config{SessionSecret: "123"})
 		res := httptest.NewRecorder()
 		api.ServeHTTP(res, req)
 		assert.Equal(t, res.Code, 200)
@@ -90,27 +112,28 @@ func TestBinsGet(t *testing.T) {
 		if assert.Nil(t, err) {
 			assert.Equal(t, len(data), 0)
 		}
-
-		bin1, err := createBin(api)
+		bin1, cookie, err := createBin(api, "{}", "")
 		if assert.Nil(t, err) {
-			bin2, err := createBin(api)
+			bin2, cookie, err := createBin(api, "{}", cookie)
 			if assert.Nil(t, err) {
 				assert.NotEqual(t, bin1, bin2)
 				res := httptest.NewRecorder()
+				req.Header.Set("Cookie", cookie)
 				api.ServeHTTP(res, req)
+				req.Header.Del("Cookie")
 				assert.Equal(t, res.Code, 200)
 				data := []map[string] interface {}{}
 				err = json.Unmarshal([]byte(res.Body.String()), &data)
 				if assert.Nil(t, err) {
 					if assert.Equal(t, len(data), 2) {
-						assert.Equal(t, data[0], bin1)
-						assert.Equal(t, data[1], bin2)
+						assert.Equal(t, data[1], bin1)
+						assert.Equal(t, data[0], bin2)
 					}
 				}
 			}
 		}
 
-		api = GetApi()
+		api = GetApi(&Config{SessionSecret: "123"})
 		mockedStorage := &MockedStorage{}
 		api.MapTo(mockedStorage, (*Storage)(nil))
 		res = httptest.NewRecorder()
@@ -125,14 +148,14 @@ func TestBinsGet(t *testing.T) {
 }
 
 func TestBinGet(t *testing.T) {
-	api := GetApi()
+	api := GetApi(&Config{SessionSecret: "123"})
 	req, err := http.NewRequest("GET", "/api/v1/bins/name22", nil)
 	if assert.Nil(t, err) {
 		res := httptest.NewRecorder()
 		api.ServeHTTP(res, req)
 		assert.Equal(t, res.Code, 404)
 	}
-	bin, err := createBin(api)
+	bin, cookie, err := createBin(api, "{}", "")
 	if assert.Nil(t, err) {
 		req, err = http.NewRequest("GET", fmt.Sprintf("/api/v1/bins/%s", bin["name"]), nil)
 		if assert.Nil(t, err) {
@@ -147,9 +170,31 @@ func TestBinGet(t *testing.T) {
 			}
 		}
 	}
+	// test private bin
+	bin, cookie, err = createBin(api, "{\"private\":true}", "")
+	if assert.Nil(t, err) {
+		req, err = http.NewRequest("GET", fmt.Sprintf("/api/v1/bins/%s", bin["name"]), nil)
+		if assert.Nil(t, err) {
+			req.Header.Set("Cookie", cookie)
+			res := httptest.NewRecorder()
+			api.ServeHTTP(res, req)
+			if assert.Equal(t, res.Code, 200) {
+				tBin := map[string]interface {}{}
+				err = json.Unmarshal(res.Body.Bytes(), &tBin)
+				if assert.Nil(t, err) {
+					assert.Equal(t, tBin, bin)
+				}
+			}
+			req.Header.Del("Cookie")
+			res = httptest.NewRecorder()
+			api.ServeHTTP(res, req)
+			assert.Equal(t, res.Code, 403)
+		}
+	}
+
 	req, err = http.NewRequest("GET", "/api/v1/bins/name22", nil)
 	if assert.Nil(t, err) {
-		api = GetApi()
+		api = GetApi(&Config{SessionSecret: "123"})
 		mockedStorage := &MockedStorage{}
 		api.MapTo(mockedStorage, (*Storage)(nil))
 		res := httptest.NewRecorder()
@@ -162,11 +207,12 @@ func TestBinGet(t *testing.T) {
 }
 
 func TestRequestCreate(t *testing.T) {
-	api := GetApi()
-	bin, err := createBin(api)
+	api := GetApi(&Config{SessionSecret: "123"})
+	bin, cookie, err := createBin(api, "{}", "")
 	if assert.Nil(t, err) {
 		req, err := http.NewRequest("GET", fmt.Sprintf("/bins/%s", bin["name"]), bytes.NewBuffer(nil))
 		if assert.Nil(t, err) {
+			req.Header.Set("Cookie", cookie)
 			res := httptest.NewRecorder()
 			api.ServeHTTP(res, req)
 			if assert.Equal(t, res.Code, 200) {
@@ -185,7 +231,7 @@ func TestRequestCreate(t *testing.T) {
 		}
 	}
 
-	api = GetApi()
+	api = GetApi(&Config{SessionSecret: "123"})
 	mockedStorage := &MockedStorage{}
 	api.MapTo(mockedStorage, (*Storage)(nil))
 	res := httptest.NewRecorder()
@@ -204,11 +250,12 @@ func TestRequestCreate(t *testing.T) {
 }
 
 func TestRequestsGet(t *testing.T) {
-	api := GetApi()
+	api := GetApi(&Config{SessionSecret: "123"})
 
-	if bin, err := createBin(api); assert.Nil(t, err) {
+	if bin, cookie, err := createBin(api, "{}", ""); assert.Nil(t, err) {
 		url := fmt.Sprintf("/api/v1/bins/%s/requests/", bin["name"])
-		if req, err := http.NewRequest("GET", url, nil); assert.Nil(t, err){
+		if req, err := http.NewRequest("GET", url, bytes.NewBuffer(nil)); assert.Nil(t, err){
+			req.Header.Set("Cookie", cookie)
 			res := httptest.NewRecorder()
 			api.ServeHTTP(res, req)
 			if assert.Equal(t, res.Code, 200) {
@@ -226,7 +273,7 @@ func TestRequestsGet(t *testing.T) {
 					api.ServeHTTP(res, req)
 					if assert.Equal(t, res.Code, 200) {
 						requests := []map[string]interface {}{}
-						if err = json.Unmarshal([]byte(res.Body.String()), &requests); assert.Nil(t, err) {
+						if err = json.Unmarshal(res.Body.Bytes(), &requests); assert.Nil(t, err) {
 							assert.Equal(t, len(requests), 2)
 							assert.Equal(t, requests, []map[string]interface {}{request2, request1})
 						}
@@ -249,7 +296,7 @@ func TestRequestsGet(t *testing.T) {
 		}
 	}
 
-	api = GetApi()
+	api = GetApi(&Config{SessionSecret: "123"})
 	mockedStorage := &MockedStorage{}
 	api.MapTo(mockedStorage, (*Storage)(nil))
 	realBin := NewBin()
@@ -273,11 +320,12 @@ func TestRequestsGet(t *testing.T) {
 }
 
 func TestRequestGet(t *testing.T){
-	api := GetApi()
+	api := GetApi(&Config{SessionSecret: "123"})
 
-	if bin, err := createBin(api); assert.Nil(t, err) {
+	if bin, cookie, err := createBin(api, "{}", ""); assert.Nil(t, err) {
 		url := fmt.Sprintf("/api/v1/bins/%s/requests/name", bin["name"])
 		if req, err := http.NewRequest("GET", url, nil); assert.Nil(t, err){
+			req.Header.Set("Cookie", cookie)
 			res := httptest.NewRecorder()
 			api.ServeHTTP(res, req)
 			assert.Equal(t, res.Code, 404)
@@ -285,6 +333,7 @@ func TestRequestGet(t *testing.T){
 		if request, err := createRequest(api, bin["name"].(string)); assert.Nil(t, err) {
 			url = fmt.Sprintf("/api/v1/bins/%s/requests/%s", bin["name"], request["id"])
 			if req, err := http.NewRequest("GET", url, nil); assert.Nil(t, err) {
+				req.Header.Set("Cookie", cookie)
 				res := httptest.NewRecorder()
 				api.ServeHTTP(res, req)
 				if assert.Equal(t, res.Code, 200) {
@@ -297,7 +346,7 @@ func TestRequestGet(t *testing.T){
 		}
 	}
 
-	api = GetApi()
+	api = GetApi(&Config{SessionSecret: "123"})
 	mockedStorage := &MockedStorage{}
 	api.MapTo(mockedStorage, (*Storage)(nil))
 	res := httptest.NewRecorder()
@@ -311,10 +360,12 @@ func TestRequestGet(t *testing.T){
 	}
 }
 
-func createBin(handler http.Handler) (bin map[string]interface {}, err error){
-	if req, err := http.NewRequest("POST", "/api/v1/bins/", nil); err == nil {
+func createBin(handler http.Handler, body string, cookie string) (bin map[string]interface {}, setCookie string, err error){
+	if req, err := http.NewRequest("POST", "/api/v1/bins/", bytes.NewBuffer([]byte(body))); err == nil {
+		req.Header.Set("Cookie", cookie)
 		res := httptest.NewRecorder()
 		handler.ServeHTTP(res, req)
+		setCookie = res.Header().Get("Set-Cookie")
 		err = json.Unmarshal([]byte(res.Body.String()), &bin)
 	}
 	return
@@ -324,7 +375,7 @@ func createRequest(handler http.Handler, binName string) (request map[string]int
 	if req, err := http.NewRequest("POST", fmt.Sprintf("/bins/%s", binName), bytes.NewBuffer(nil)); err == nil {
 		res := httptest.NewRecorder()
 		handler.ServeHTTP(res, req)
-		err = json.Unmarshal([]byte(res.Body.String()), &request)
+		err = json.Unmarshal(res.Body.Bytes(), &request)
 	}
 	return
 }
