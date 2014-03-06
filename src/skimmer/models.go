@@ -79,7 +79,7 @@ func NewRequest(httpRequest *http.Request, maxBodySize int) *Request {
 		Header:        httpRequest.Header,
 		ContentLength: httpRequest.ContentLength,
 		RemoteAddr:    httpRequest.RemoteAddr,
-		RequestURI:    httpRequest.RequestURI,
+		RequestURI:    httpRequest.URL.RequestURI(),
 		FormValue:     formValue,
 		FormFile:      formFile,
 		Body:          bodyValue,

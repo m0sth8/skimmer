@@ -106,12 +106,12 @@ func (storage *MemoryStorage) LookupRequests(binName string, from int, to int) (
 		if from > to {
 			from = to
 		}
-		reversedLen := to - from
+		reversedLen := len(binRecord.requests)
 		reversed := make([]*Request, reversedLen)
-		for i, request := range binRecord.requests[from:to] {
+		for i, request := range binRecord.requests {
 			reversed[reversedLen-i-1] = request
 		}
-		return reversed, nil
+		return reversed[from:to], nil
 	} else {
 		return nil, err
 	}

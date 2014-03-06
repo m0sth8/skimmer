@@ -85,7 +85,7 @@ func GetApi() *martini.ClassicMartini {
 		})
 
 	api.Any("/bins/:name", func(r render.Render, storage Storage, params martini.Params,
-			req *http.Request, res http.ResponseWriter){
+			req *http.Request){
 			if bin, error := storage.LookupBin(params["name"]); error == nil {
 				request := NewRequest(req, REQUEST_BODY_SIZE)
 				if err := storage.CreateRequest(bin, request); err == nil {
